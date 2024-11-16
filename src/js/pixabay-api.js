@@ -1,47 +1,28 @@
-import iziToast from 'izitoast';
-import 'izitoast/dist/css/iziToast.min.css';
-import SimpleLightbox from 'simplelightbox';
-import 'simplelightbox/dist/simple-lightbox.min.css';
+import axios from 'axios';
 
-import { handleSuccess } from './render-functions.js';
-import { refs } from '../main.js';
+const BASE_URL = 'https://pixabay.com/api/';
+const API_KEY = '46912435-f669d0ff50839d2359d53ff0c';
 
-const pixabayURL = 'https://pixabay.com/api/';
-const APIKey = '47074953-ce587c3b0a52a629055965741';
+const loader = document.querySelector('.loader');
 
-export function fetchImages(value) {
-  return fetch(
-    `${pixabayURL}?key=${APIKey}&q=${value}&image_type=photo&orientation=horizontal&safesearch=true&per_page=30`
-  )
-    .then(response => {
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
-      return response.json();
-    })
-    .then(data => {
-      if (data.hits.length === 0) {
-        iziToast.error({
-          message:
-            'Sorry, there are no images matching your search query. Please try again!',
-          position: 'bottomRight',
-        });
-        return;
-      }
+const perPage = 15;
 
-      const markup = handleSuccess(data.hits);
-      refs.gallery.insertAdjacentHTML('beforeend', markup);
+export async function serviseImage(query, page = 1) {
+  loader.style.display = 'block';
+  const { data } = await axios(`${BASE_URL}`, {
+    params: {
+      key: API_KEY,
+      q: query,
+      image_type: 'photo',
+      orientation: 'horizontal',
+      safesearch: true,
+      leng: 'en',
+      page,
+      per_page: perPage,
+    },
+  }).finally(() => {
+    loader.style.display = 'none';
+  });
 
-      const library = new SimpleLightbox('.gallery a', {
-        captionDelay: 300,
-        captionsData: 'alt',
-      });
-
-      library.refresh();
-    })
-    .catch(error => {
-      console.error('Error fetching images:', error);
-      throw error;
-    });
+  return data;
 }
-

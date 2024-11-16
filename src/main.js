@@ -1,85 +1,124 @@
+// Описаний у документації
 import iziToast from 'izitoast';
+// Додатковий імпорт стилів
 import 'izitoast/dist/css/iziToast.min.css';
-import { fetchImages } from './js/pixabay-api.js';
 
-export const refs = {
-  form: document.querySelector('.form'),
-  gallery: document.querySelector('.gallery'),
-  loader: document.querySelector('.loader'),
-};
+// Описаний у документації
+import SimpleLightbox from 'simplelightbox';
+// Додатковий імпорт стилів
+import 'simplelightbox/dist/simple-lightbox.min.css';
 
-refs.form.addEventListener('submit', handleSubmit);
+import { createMarkup } from './js/render-functions';
+import { serviseImage } from './js/pixabay-api';
+import { gallery } from './js/render-functions';
 
-function handleSubmit(event) {
+const form = document.querySelector('.form');
+const loader = document.querySelector('.loader');
+const endLoaderText = document.querySelector('.end-loader');
+const btnLoadMore = document.querySelector('.btn-load-more');
+const loaderMore = document.querySelector('.loader-more');
+
+let page = 1;
+const perPage = 15;
+let queryValue = '';
+
+loaderMore.style.display = 'none';
+loader.style.display = 'none';
+endLoaderText.style.display = 'none';
+btnLoadMore.style.display = 'none';
+
+form.addEventListener('submit', onFormBtnClick);
+btnLoadMore.addEventListener('click', onBtnLoadMoreClick);
+
+async function onFormBtnClick(event) {
   event.preventDefault();
-  const form = event.currentTarget;
-  const inputValue = form.elements.state.value.trim();
 
-  refs.gallery.innerHTML = '';
+  page = 1;
 
-  if (!inputValue) {
+  gallery.innerHTML = '';
+  loader.style.display = 'block';
+  btnLoadMore.style.display = 'none';
+  endLoaderText.style.display = 'none';
+
+  queryValue = event.target.elements.query.value;
+
+  if (queryValue.trim() === '') {
     iziToast.error({
-      message: 'Please enter your request',
-      position: 'bottomRight',
+      title: 'Error',
+      message: 'Please enter the name of the image in the search field!',
     });
+    loader.style.display = 'none';
     return;
   }
+  try {
+    const data = await serviseImage(queryValue, page);
 
-  refs.loader.style.display = 'inline-block';
-  fetchImages(inputValue)
-    .then(() => {
-      refs.loader.style.display = 'none';
-    })
-    .catch(error => {
-      refs.loader.style.display = 'none';
+    if (!data.hits.length) {
       iziToast.error({
-        message: 'Error fetching images. Please try again later.',
-        position: 'bottomRight',
+        title: 'Error',
+        message:
+          'Sorry, there are no images matching your search query. Please try again!',
       });
-      console.error(error);
-    });
+    } else {
+      loader.style.display = 'block';
+      createMarkup(data.hits);
+    }
 
-  refs.form.reset();
+    if (data.totalHits > page * perPage) {
+      btnLoadMore.style.display = 'block';
+    } else {
+      btnLoadMore.style.display = 'none';
+    }
+  } catch (error) {
+    iziToast.error({
+      title: 'Error',
+      message: 'Oops! Something went wrong. Try again.',
+    });
+  } finally {
+    loader.style.display = 'none';
+  }
+
+  form.reset();
 }
 
+async function onBtnLoadMoreClick() {
+  page += 1;
 
-fetch('https://pixabay.com/api/?key=47074953-ce587c3b0a52a629055965741');
+  try {
+    btnLoadMore.style.display = 'none';
+    loaderMore.style.display = 'block';
 
-// const list = document.querySelector('.todo-list');
-// const params = new URLSearchParams({
-//     _limit: 10,
-//     _page: 3,
-// })
-// console.log(params.toString());
+    const data = await serviseImage(queryValue, page);
+    createMarkup(data.hits);
 
-// fetch(`https://jsonplaceholder.typicode.com/todos?${params}`)
-//   .then(response => {
-//     console.log(response);
-//     if (!response.ok) {
-//       throw new Error('Ooops!');
-//     }
-//     return response.json();
-//   })
-//   .then(data => list
-//     .insertAdjacentHTML('beforeend', createMarkup(data)) )
+    loaderMore.style.display = 'none';
 
-//   .catch(error => 
-//     list.insertAdjacentHTML("beforeend", `
-//     <li>
-//     <p>${error}</p>
-//     </li>
-//     `)
-//   )
+    if (data.totalHits > page * perPage) {
+      btnLoadMore.style.display = 'block';
+    } else {
+      btnLoadMore.style.display = 'none';
 
-// function createMarkup(arr) {
-//   return arr
-//     .map(
-//       ({ title, completed }) => `
-// <li class="list-item">
-// <input type="checkbox" ${completed && 'checked'}/>
-// <p>${title}</p>
-// </li>
-//             `
-//     )
-//     .join("");
-// }
+      iziToast.info({
+        title: 'Hello',
+        message: `We're sorry, but you've reached the end of search results.`,
+      });
+
+      endLoaderText.style.display = 'block';
+    }
+    const card = document.querySelector('.gallery-item');
+    const cardHeight = card.getBoundingClientRect().height;
+
+    window.scrollBy({
+      left: 0,
+      top: cardHeight * 2,
+      behavior: 'smooth',
+    });
+  } catch (error) {
+    iziToast.error({
+      title: 'Error',
+      message: 'Oops! Something went wrong. Try again.',
+    });
+  } finally {
+    loaderMore.style.display = 'none';
+  }
+}

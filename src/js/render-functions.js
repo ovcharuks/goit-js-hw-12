@@ -1,39 +1,63 @@
-export function handleSuccess(data) {
-    return data
-      .map(
-        ({
-          largeImageURL,
-          webformatURL,
-          tags,
-          likes,
-          views,
-          comments,
-          downloads,
-        }) => {
-          return `<li class="gallery-item">
-          <article class="card">
-      <a class="card-link" href="${largeImageURL}"><img class="card-image" src="${webformatURL}" alt="${tags}"/></a>        <div class="card-container">
-            <div class="card-item">
-              <p class="card-text">Likes</p>
-              <p class="card-number">${likes}</p>
-            </div>
-            <div class="card-item">
-              <p class="card-text">Views</p>
-              <p class="card-number">${views}</p>
-            </div>
-            <div class="card-item">
-              <p class="card-text">Comments</p>
-              <p class="card-number">${comments}</p>
-            </div>
-            <div class="card-item">
-              <p class="card-text">Downloads</p>
-              <p class="card-number">${downloads}</p>
-            </div>
-          </div>
-          </article>
-            </li>`;
-        }
-      )
-      .join('');
-  }
-  
+// Описаний у документації
+import SimpleLightbox from 'simplelightbox';
+// Додатковий імпорт стилів
+import 'simplelightbox/dist/simple-lightbox.min.css';
+
+export const gallery = document.querySelector('.gallery');
+
+const simplelightboxExempl = new SimpleLightbox('.gallery a', {
+  captions: true,
+  captionsData: 'alt',
+  captionPosition: 'buttom',
+  captionDelay: 250,
+  overlayOpacity: 0.7,
+});
+
+export function createMarkup(arr) {
+  const markupGallery = arr
+    .map(
+      ({
+        webformatURL,
+        largeImageURL,
+        tags,
+        likes,
+        views,
+        comments,
+        downloads,
+      }) => {
+        return `
+      <li class="gallery-item">
+	<a class="gallery-link" href="${largeImageURL}">
+		<img
+			class="gallery-image"
+			src="${webformatURL}"
+			alt="${tags}"
+			/>
+	</a>
+    <ul class="gallery-image-descr">
+    <li>
+    <p class="image-descr-text">Likes</p>
+    <p class="image-descr-number">${likes}</p>
+    </li>
+    <li>
+    <p class="image-descr-text">Views</p>
+    <p class="image-descr-number">${views}</p>
+    </li>
+    <li>
+    <p class="image-descr-text">Comments</p>
+    <p class="image-descr-number">${comments}</p>
+    </li>
+    <li>
+    <p class="image-descr-text">Downloads</p>
+    <p class="image-descr-number">${downloads}</p>
+    </li>
+    </ul>
+</li>
+      `;
+      }
+    )
+    .join('');
+
+  gallery.insertAdjacentHTML('beforeend', markupGallery);
+  simplelightboxExempl.refresh();
+}
